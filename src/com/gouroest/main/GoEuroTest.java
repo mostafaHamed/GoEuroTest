@@ -1,16 +1,9 @@
 package com.gouroest.main;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.ws.rs.core.MediaType;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFFont;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Row;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,15 +13,18 @@ import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 
-
 /**
  * @author mhamed
  *
  */
 public class GoEuroTest {
 
+	String cityName;
 	public City city;
 	public ArrayList<City> cities = new ArrayList<City>();
+	private static final String COMMA_DELIMITER = ",";
+	private static final String NEW_LINE_SEPARATOR = "\n";
+	private static final String FILE_HEADER = "_id,name,type,latitude,longitude";
 
 	/**
 	 * This method calls a web-service with a specific input and return with a JsonArray as a reply
@@ -83,63 +79,44 @@ public class GoEuroTest {
 	
 	
 	/**
-	 * This method creates and fills an excel sheet.
+	 * This method creates and fills csv file.
 	 * @param cities arraylist of City
 	 */
 	private void fillExcelSheet(ArrayList<City> cities){
-		HSSFWorkbook workbook = new HSSFWorkbook();
-		
-		
-		HSSFFont boldFont = workbook.createFont();
-		boldFont.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
-		HSSFCellStyle boldStyle = workbook.createCellStyle();
-		boldStyle.setFont(boldFont); 
+		FileWriter fileWriter = null;
+		try {
+			fileWriter = new FileWriter(cityName + ".csv");
+			fileWriter.append(FILE_HEADER.toString());
+			fileWriter.append(NEW_LINE_SEPARATOR);
+			for (City city : cities) {
+				fileWriter.append(String.valueOf(city.getId()));
+				fileWriter.append(COMMA_DELIMITER);
+				fileWriter.append(city.getName());
+				fileWriter.append(COMMA_DELIMITER);
+				fileWriter.append(city.getType());
+				fileWriter.append(COMMA_DELIMITER);
+				fileWriter.append(String.valueOf(city.getLatitude()));
+				fileWriter.append(COMMA_DELIMITER);
+				fileWriter.append(String.valueOf(city.getLongitude()));
+				fileWriter.append(NEW_LINE_SEPARATOR);
+			}
 
-		HSSFSheet sheet = workbook.createSheet("Cities");
-        int rowIndex = 0;
-        int cellIndex = 0;
-        
-        Row row = sheet.createRow(rowIndex++);
-        HSSFCell idCell = (HSSFCell) row.createCell(cellIndex++);
-        idCell.setCellValue("_id");
-        idCell.setCellStyle(boldStyle);
-        
-        HSSFCell nameCell = (HSSFCell) row.createCell(cellIndex++);
-        nameCell.setCellValue("name");
-        nameCell.setCellStyle(boldStyle);
-        
-        HSSFCell typeCell = (HSSFCell) row.createCell(cellIndex++);
-        typeCell.setCellValue("name");
-        typeCell.setCellStyle(boldStyle);
-
-        HSSFCell latitudeCell = (HSSFCell) row.createCell(cellIndex++);
-        latitudeCell.setCellValue("latitude");
-        latitudeCell.setCellStyle(boldStyle);
-        
-        HSSFCell longitudeCell = (HSSFCell) row.createCell(cellIndex++);
-        longitudeCell.setCellValue("longitude");
-        longitudeCell.setCellStyle(boldStyle);
-
-        for(City city : cities){
-        	cellIndex = 0;
-            row = sheet.createRow(rowIndex++);
-            row.createCell(cellIndex++).setCellValue(city.getId());
-            row.createCell(cellIndex++).setCellValue(city.getName());
-            row.createCell(cellIndex++).setCellValue(city.getType());
-            row.createCell(cellIndex++).setCellValue(city.getLatitude());
-            row.createCell(cellIndex++).setCellValue(city.getLongitude());
-        }
-         
-        try {
-            FileOutputStream out = 
-                    new FileOutputStream(new File("Cities Sheet.xls"));
-            workbook.write(out);
-            out.close();
-            System.out.println("Done!!!");
-            System.out.println("Check created excel sheet named \"Cities Sheet.xls\" in the same folder where \"GoEuroTest.jar\" exists.");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+			System.out.println("Done!!!");
+			System.out.println("Check created excel sheet named " + cityName + ".csv in the same folder where \"GoEuroTest.jar\" exists.");
+			
+		} catch (Exception e) {
+			System.out.println("Error in CsvFileWriter !!!");
+			e.printStackTrace();
+		} finally {
+			try {
+				fileWriter.flush();
+				fileWriter.close();
+			} catch (IOException e) {
+				System.out.println("Error while flushing/closing fileWriter !!!");
+                e.printStackTrace();
+			}
+			
+		}
 	}
 	
 	
@@ -155,6 +132,7 @@ public class GoEuroTest {
 	
 	public static void main(String[] args) {
 		GoEuroTest goEuroTest = new GoEuroTest();
-		goEuroTest.process(args[0]);
+		goEuroTest.cityName = args[0];
+		goEuroTest.process(goEuroTest.cityName);
 	}
 }
